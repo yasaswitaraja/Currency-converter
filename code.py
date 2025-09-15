@@ -1,59 +1,24 @@
 import streamlit as st
-import pdfplumber
-import matplotlib.pyplot as plt
-from docx import Document
-import io
-from wordcloud import WordCloud
+from currency_converter import CurrencyConverter
 
+# Initialize converter
+c = CurrencyConverter()
 
+st.set_page_config(page_title="Currency Converter", page_icon="💱", layout="centered")
 
-def extract_text_from_word(iobytes):
-    doc = Document(io.BytesIO(iobytes))
-    paras=[]
-    for para in doc.paragraphs:
-        paras.append(para.text)
-    return ' '.join(paras)
+st.title("💱 Currency Converter")
 
-def extract_text_from_pdf(iobytes):
-    doc = pdfplumber.open(io.BytesIO(iobytes))
-    pages=[]
-    for page in doc.pages:
-        pages.append(page.extract_text())
-    return ' '.join(pages)
+amount = st.number_input("Enter amount:", min_value=0.0, value=100.0)
 
+col1, col2 = st.columns(2)
+with col1:
+    from_currency = st.selectbox("From Currency", sorted(c.currencies), index=sorted(c.currencies).index("USD"))
+with col2:
+    to_currency = st.selectbox("To Currency", sorted(c.currencies), index=sorted(c.currencies).index("INR"))
 
-def wordcloud(uploaded):  
-    iobytes = uploaded.read()
-    if uploaded.name.lower().endswith('pdf'):
-        text = extract_text_from_pdf(iobytes)
-        image=WordCloud().generate(text)
-        fig,ax=plt.subplots(figsize=(10,7))
-        ax.imshow(image)
-        ax.axis('off')
-        st.pyplot(fig)
-    else:
-        text = extract_text_from_word(iobytes)
-        image=WordCloud().generate(text)
-        fig,ax=plt.subplots(figsize=(10,7))
-        ax.imshow(image)
-        ax.axis('off')
-        st.pyplot(fig)
-
-
-         
-        
-    
-
-
-
-
-st.set_page_config(layout='centered')
-st.title('Word Cloud from PDF or Word')
-uploaded = st.file_uploader('Upload any PDF or WORD')
-if uploaded:
-    wordcloud(uploaded)
-
-
-
-
-
+if st.button("Convert"):
+    try:
+        result = c.convert(amount, from_currency, to_currency)
+        st.success(f"{amount} {from_currency} = {result:.2f} {to_currency}")
+    except Exception as e:
+        st.error(f"Error: {e}")
